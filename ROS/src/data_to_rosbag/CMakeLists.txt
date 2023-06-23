@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(imu_to_rosbag)
+project(data_to_rosbag)
+set(CMAKE_BUILD_TYPE "Debug")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -10,10 +11,12 @@ project(imu_to_rosbag)
 find_package(catkin REQUIRED COMPONENTS
   rosbag
   roscpp
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(OpenCV REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -103,7 +106,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES imu_to_rosbag
+#  LIBRARIES data_to_rosbag
 #  CATKIN_DEPENDS rosbag roscpp
 #  DEPENDS system_lib
 )
@@ -117,11 +120,12 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/imu_to_rosbag.cpp
+#   src/${PROJECT_NAME}/data_to_rosbag.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -132,8 +136,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/imu_to_rosbag_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/data_to_rosbag_node.cpp)
 add_executable(data2bag src/data2bag.cc)
+target_link_libraries(data2bag ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,7 +154,6 @@ add_executable(data2bag src/data2bag.cc)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(data2bag ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -198,7 +202,7 @@ target_link_libraries(data2bag ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_imu_to_rosbag.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_data_to_rosbag.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

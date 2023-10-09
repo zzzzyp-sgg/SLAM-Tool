@@ -10,6 +10,10 @@
  *******************************************************/
 
 #include "qr_code.h"
+#include "qr_math.h"
+#include "../initial/frame.h"
+#include "../initial/Camera.h"
+#include "../initial/estimator.h"
 #include <iostream>
 #include <memory>
 #include <stdlib.h>
@@ -29,14 +33,15 @@ void display(cv::Mat &im, VecPoint2f& corners)
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        std::cout << "Input: image_path num!" << std::endl;
+    if (argc != 5) {
+        std::cout << "Input: image_path img2_path config num!" << std::endl;
         exit(0);
     }
 
-    std::string ImgPath = argv[1];
-    int n = std::stoi(argv[2]);
+    std::string ImgPath = argv[1], ImgPath2 = argv[2], config = argv[3];
+    int n = std::stoi(argv[4]);
     cv::Mat src_img = cv::imread(ImgPath, cv::IMREAD_GRAYSCALE);
+    cv::Mat src_img2 = cv::imread(ImgPath2, cv::IMREAD_GRAYSCALE);
 
 #if 0
 
@@ -71,12 +76,28 @@ int main(int argc, char **argv) {
     }
 #endif
 
-#if 1
+#if 0
 
     std::shared_ptr<QRCode> qr(new QRCode(src_img, n));
+    // detect qr code
     qr->DetectQuirc();
+
+    // detect keypoints
+    qr->DetectFeature();
 
 #endif
 
+#if 1
+    std::shared_ptr<Frame> f(new Frame(src_img, n));
+    // f->Display();
+    std::shared_ptr<Frame> f2(new Frame(src_img2, n));
+    // f2->Display();
+    std::shared_ptr<Camera> cam(new Camera());
+    cam->readParameters(config);
+    std::shared_ptr<Estimator> est(new Estimator(cam));
+    est->AddFrame(f);
+    est->AddFrame(f2);
+    est->EstProcssing();
+#endif
     return 0;
 }

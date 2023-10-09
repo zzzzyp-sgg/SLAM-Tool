@@ -21,41 +21,26 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/objdetect.hpp>
 
-typedef std::vector<std::vector<cv::Point2f>> VecVecPoint2f;
-typedef std::vector<cv::Point2f> VecPoint2f;
-typedef std::pair<int, cv::Point2f> CornerIndex;
+#include "qr_math.h"
 
 class QRCode {
 public:
-    QRCode(const cv::Mat& image, int n = 1) {
+    QRCode(const cv::Mat &image, int n = 1) {
         src_img_ = image;
         n_ = n;
     }
 
-    /// compute the angle between two angles
-    float GetAngleOfTwoVector(const cv::Point2f& pt1, const cv::Point2f& pt2, const cv::Point2f& c);
-
-    /// sort near to far
-    VecPoint2f SortNearToFar(VecPoint2f& CornerPointList, const cv::Point2f& RefPoint, int n);
-
-    /// get nearest point
-    cv::Point2f GetNearestPoint(VecPoint2f& CornerPointList, const cv::Point2f& RefPoint);
-
-    /// get nearest point
-    cv::Point2f GetFarestPoint(VecPoint2f& CornerPointList, const cv::Point2f& RefPoint);
-
-    /// get cross point
-    cv::Point2f GetCrossPoint(const cv::Point2f& o1, const cv::Point2f& p1,
-                              const cv::Point2f& o2, const cv::Point2f& p2);
-
-    /// locate the QR code
+    /// locate the QR code without quirc
     void DetectCode();
 
     /// detect with quirc pre-detect
-    void DetectQuirc();
+    bool DetectQuirc();
 
     /// show result
-    void Show(cv::Mat &im, VecPoint2f& corners);
+    void ShowDetect(cv::Mat &im, VecPoint2f &corners);
+
+    /// detect feature points
+    void DetectFeature();
 
     /// data interface
     std::map<int, cv::Point2f> GetCornerCenters() {
@@ -70,29 +55,43 @@ public:
         return center_;
     }
 
+    cv::Mat GetProImg() {
+        return pro_img_;
+    }
+
+    VecPoint2f GetKeypoints() {
+        return keyPoints_;
+    }
+
+    VecPoint2f GetCorners() {
+        return corners_;
+    }
+
+    std::vector<int> GetDeltaCoor() {
+        std::vector<int> delta{col_delta_, row_delta_};
+        return delta;
+    }
+
 private:
 
     /// image processing
     void ImgProcessing();
 
     /// just filter and binaryzation
-    void ImgPro(cv::Mat& img);
+    void ImgPro(cv::Mat &img);
 
     /// filter profile
     std::vector<VecVecPoint2f> ProfileFilter();
 
     /// remove unused profile
-    void ProfilePro(const std::vector<VecVecPoint2f>& qrPointList, std::vector<cv::RotatedRect>& RectList,
-                    VecPoint2f& PointList, VecVecPoint2f& OutquadList);
+    void ProfilePro(const std::vector<VecVecPoint2f> &qrPointList, std::vector<cv::RotatedRect> &RectList,
+                    VecPoint2f &PointList, VecVecPoint2f &OutquadList);
 
     /// sort corner centers
-    void CornerSort(std::vector<cv::RotatedRect>& RectList, VecPoint2f& PointList);
+    void CornerSort(std::vector<cv::RotatedRect> &RectList, VecPoint2f &PointList);
 
     /// precise location
-    void Location(VecPoint2f& PointList, VecVecPoint2f& OutquadList);
-
-    /// vector cv::Point to vector cv::Point2f
-    VecPoint2f Point2Point2f(const std::vector<cv::Point> VecPoint);
+    void Location(VecPoint2f &PointList, VecVecPoint2f &OutquadList);
 
 private:
     /// input img
@@ -109,6 +108,10 @@ private:
     cv::Point2f center_;
     /// opencv detect
     VecPoint2f corners_;
+    /// feature points
+    VecPoint2f keyPoints_;
+    /// recover the coor to origin img
+    int col_delta_, row_delta_;
 
     /// contours
     std::vector<std::vector<cv::Point>> contours_;

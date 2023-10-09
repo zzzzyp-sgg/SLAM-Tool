@@ -11,5 +11,9 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(test test.cpp qr_code.cpp)
+add_executable(test test.cpp 
+                    qr_code.cpp qr_math.cpp 
+                    ../initial/frame.cpp 
+                    ../initial/Camera.cpp
+                    ../initial/estimator.cpp)
 target_link_libraries(test ${OpenCV_LIBS})

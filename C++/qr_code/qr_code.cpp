@@ -11,64 +11,6 @@
 
 #include "qr_code.h"
 
-float QRCode::GetAngleOfTwoVector(const cv::Point2f& pt1, const cv::Point2f& pt2, const cv::Point2f& c) {
-
-    float theta = atan2(pt1.x - c.x, pt1.y - c.y) - atan2(pt2.x - c.x, pt2.y - c.y);
-    if (theta > CV_PI)
-        theta -= 2 * CV_PI;
-    if (theta < -CV_PI)
-        theta += 2 * CV_PI;
-    theta = theta * 180.0 / CV_PI;
-
-    return theta;
-}
-
-
-VecPoint2f QRCode::SortNearToFar(VecPoint2f& CornerPointList, 
-                                 const cv::Point2f& RefPoint, int n) {
-
-    sort(CornerPointList.begin(), CornerPointList.end(), 
-         [RefPoint](const cv::Point2f& pt1, const cv::Point2f& pt2){
-
-        float distance_1 = cv::norm(pt1 - RefPoint);
-        float distance_2 = cv::norm(pt2 - RefPoint);
-        return distance_1 < distance_2;
-    });
-
-    VecPoint2f NearCornerList;
-    for (int i = 0; i < n; i++) {
-        NearCornerList.push_back(CornerPointList.at(i));
-    }
-
-    return NearCornerList;
-}
-
-cv::Point2f QRCode::GetNearestPoint(VecPoint2f &CornerPointList, const cv::Point2f &RefPoint) {
-    SortNearToFar(CornerPointList, RefPoint, 4);
-    return CornerPointList.at(0);
-}
-
-cv::Point2f QRCode::GetFarestPoint(VecPoint2f &CornerPointList, const cv::Point2f &RefPoint) {
-    SortNearToFar(CornerPointList, RefPoint, 4);
-    return CornerPointList.at(CornerPointList.size() - 1);
-}
-
-cv::Point2f QRCode::GetCrossPoint(const cv::Point2f &o1, const cv::Point2f &p1, 
-                                  const cv::Point2f &o2, const cv::Point2f &p2)
-{
-    cv::Point2f x = o2 - o1;
-    cv::Point2f d1 = p1 - o1;
-    cv::Point2f d2 = p2 - o2;
-
-    float cross = d1.x * d2.y - d1.y * d2.x;
-    if (abs(cross) < /*EPS*/1e-8)
-        printf("Please check the points!\n");
-
-    double t1 = (x.x * d2.y - x.y * d2.x) / cross;
-    auto r = o1 + d1 * t1;
-    return r;
-}
-
 void QRCode::DetectCode() {
     // pre-process the img
     ImgProcessing();
@@ -90,35 +32,68 @@ void QRCode::DetectCode() {
     Location(PointList, OutquadList);
 }
 
-void QRCode::DetectQuirc() {
+bool QRCode::DetectQuirc() {
     int row = src_img_.rows / n_;
     int col = src_img_.cols / n_;
     auto tmp_img = (n_ == 1) ? src_img_ : src_img_(cv::Range(row, (n_ - 1) * row),
                                                    cv::Range(col, (n_ - 1) * col));
 
+    col_delta_ = (n_ == 1) ? 0 : col;
+    row_delta_ = (n_ == 1) ? 0 : row;
+
     ImgPro(tmp_img);
     cv::QRCodeDetector qrDecoder = cv::QRCodeDetector();
-    qrDecoder.detect(tmp_img, corners_);
-
-    Show(tmp_img, corners_);
-
-    cv::imshow("detect result", tmp_img);
-    cv::waitKey(0);
+    auto quirc_detect = qrDecoder.detect(tmp_img, corners_);
+    if (!quirc_detect) {
+        return false;
+    } else {
+        
+        ShowDetect(tmp_img, corners_);
+        pro_img_ = tmp_img;
+        return quirc_detect;     
+    }
 }
 
-void QRCode::Show(cv::Mat &im, VecPoint2f& corners) {
+void QRCode::ShowDetect(cv::Mat &im, VecPoint2f &corners) {
+
+    auto img_tmp = im.clone();
     int n = corners.size();
 	for (int i = 0; i < n; i++)
 	{
-		cv::circle(im, corners.at(i), 10, (255, 0, 0));
+		cv::circle(img_tmp, corners.at(i), 10, (255, 0, 0));
 	}
 
-	// cv::imshow("Detect result", im);
+    cv::imshow("detect result", img_tmp);
+    cv::waitKey(0);
+
+    std::vector<int> delta;
+    delta = CodeRegion(im, corners_);
+    col_delta_ += delta.at(0);
+    row_delta_ += delta.at(1);
+    // cv::imshow("ROI region", im);
     // cv::waitKey(0);
 }
 
+void QRCode::DetectFeature() {
+    // feature points' number
+    int n = POINTS_NUM;
 
+    cv::goodFeaturesToTrack(pro_img_, keyPoints_, n, 0.1, 10);
+    // for (auto kp : corners_)
+    //     keyPoints_.push_back(kp);
+    // printf("total keypoints' number: %ld\n", keyPoints_.size());
 
+    // set to RGB color
+    // auto out_img = pro_img_.clone();
+    // cv::cvtColor(out_img, out_img, cv::COLOR_GRAY2RGB);
+    // for (auto kp : keyPoints_)
+    //     cv::circle(out_img, kp, 2, cv::Scalar(0, 0, 255), cv::FILLED);
+
+    // cv::imshow("detect feature points", out_img);
+    // cv::waitKey(0);
+}
+
+// TODO 不太行 感觉比较依赖于图像质量
 void QRCode::ImgProcessing() {
 
     cv::Mat tmp_img;
@@ -136,7 +111,7 @@ void QRCode::ImgProcessing() {
     cv::waitKey(0);
 
     // binaryzation
-    // cv::threshold(tmp_img, tmp_img, 100, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    // cv::threshold(tmp_img, tmp_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     cv::adaptiveThreshold(tmp_img, tmp_img, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 7, 2);
     cv::imshow("binaryzation", tmp_img);
     // cv::imwrite("./res/10_thre_100.jpg", tmp_img);
@@ -150,7 +125,6 @@ void QRCode::ImgProcessing() {
     cv::waitKey(0);
 
     // canny
-    // TODO 不做canny试一下
     cv::Canny(tmp_img, tmp_img, 1, 3, 7, true);
     cv::imshow("canny", tmp_img);
     cv::waitKey(0);
@@ -171,7 +145,7 @@ void QRCode::ImgProcessing() {
     pro_img_ = tmp_img.clone();
 }
 
-void QRCode::ImgPro(cv::Mat& img) {
+void QRCode::ImgPro(cv::Mat &img) {
     // gauss filter
     cv::GaussianBlur(img, img, cv::Size(1, 1), 2, 2, cv::BORDER_DEFAULT);
 
@@ -219,8 +193,8 @@ std::vector<VecVecPoint2f> QRCode::ProfileFilter() {
  * @param[inout]    PointList       Corner center
  * @param[inout]    OutquadList     The outermost layer fits the quadrilateral corner points
 */
-void QRCode::ProfilePro(const std::vector<VecVecPoint2f>& qrPointList, std::vector<cv::RotatedRect>& RectList,
-                        VecPoint2f& PointList, VecVecPoint2f& OutquadList) {
+void QRCode::ProfilePro(const std::vector<VecVecPoint2f> &qrPointList, std::vector<cv::RotatedRect> &RectList,
+                        VecPoint2f &PointList, VecVecPoint2f &OutquadList) {
 
     std::vector<bool> qrPointListEnable(qrPointList.size());
 
@@ -349,7 +323,7 @@ void QRCode::ProfilePro(const std::vector<VecVecPoint2f>& qrPointList, std::vect
     }
 }
 
-void QRCode::CornerSort(std::vector<cv::RotatedRect>& RectList, VecPoint2f& PointList) {
+void QRCode::CornerSort(std::vector<cv::RotatedRect> &RectList, VecPoint2f &PointList) {
     std::vector<float> AngleList;
 
     for (int i = 0; i < PointList.size(); i++) {
@@ -405,7 +379,7 @@ void QRCode::CornerSort(std::vector<cv::RotatedRect>& RectList, VecPoint2f& Poin
     }
 }
 
-void QRCode::Location(VecPoint2f& PointList, VecVecPoint2f& OutquadList) {
+void QRCode::Location(VecPoint2f &PointList, VecVecPoint2f &OutquadList) {
 
     // get qr_code center
     cv::Point2f center;
@@ -489,13 +463,4 @@ void QRCode::Location(VecPoint2f& PointList, VecVecPoint2f& OutquadList) {
 
     center_ = cv::Point2f((P0.x + P1.x + P2.x + P3.x) / 4,
                           (P0.y + P1.y + P2.y + P3.y) / 4);
-}
-
-VecPoint2f QRCode::Point2Point2f(const std::vector<cv::Point> VecPoint) {
-    VecPoint2f vec_point2f(VecPoint.size());
-    for (int i = 0; i < VecPoint.size(); i++) {
-        vec_point2f.at(i) = cv::Point2f(VecPoint.at(i));
-    }
-
-    return vec_point2f;
 }

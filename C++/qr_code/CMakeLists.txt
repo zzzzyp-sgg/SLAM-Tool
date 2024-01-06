@@ -11,6 +11,10 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
 )
 
+
+set(OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+set(EXECUTABLE_OUTPUT_PATH "${OUTPUT_PATH}/bin/")
+
 add_executable(test test.cpp 
                     qr_code.cpp qr_math.cpp 
                     ../initial/frame.cpp 

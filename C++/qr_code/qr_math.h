@@ -20,6 +20,7 @@ typedef std::vector<std::vector<cv::Point2f>> VecVecPoint2f;
 typedef std::vector<cv::Point2f> VecPoint2f;
 typedef std::pair<int, cv::Point2f> CornerIndex;
 typedef std::vector<cv::Point3d> VecPoint3d;
+typedef std::vector<bool> VecBool;
 
 // POINTS info
 #define POINTS_NUM   80

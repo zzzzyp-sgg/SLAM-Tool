@@ -48,7 +48,11 @@ bool QRCode::DetectQuirc() {
         return false;
     } else {
         
-        ShowDetect(tmp_img, corners_);
+        // ShowDetect(tmp_img, corners_);
+        std::vector<int> delta;
+        delta = CodeRegion(tmp_img, corners_);
+        col_delta_ += delta.at(0);
+        row_delta_ += delta.at(1);
         pro_img_ = tmp_img;
         return quirc_detect;     
     }
@@ -196,7 +200,7 @@ std::vector<VecVecPoint2f> QRCode::ProfileFilter() {
 void QRCode::ProfilePro(const std::vector<VecVecPoint2f> &qrPointList, std::vector<cv::RotatedRect> &RectList,
                         VecPoint2f &PointList, VecVecPoint2f &OutquadList) {
 
-    std::vector<bool> qrPointListEnable(qrPointList.size());
+    VecBool qrPointListEnable(qrPointList.size());
 
     for (int L = 0; L < qrPointList.size(); L++) {
         auto qrPoint = qrPointList.at(L);

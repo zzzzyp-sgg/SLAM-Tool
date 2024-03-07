@@ -1,5 +1,10 @@
-# PythonTool
+# SLAM Tool
 一些在SLAM中可能用到的python或C++代码  
+## 说明  
+python --> 基于python的代码，主要包含rosbag转换、简单三角化等  
+C++    --> 基于C++的代码，其中包括qr_code文件夹，用来提取二维码，在unused中包括一些相机类之类的测试代码  
+ROS    --> 基于C++的rosbag转换代码，可以根据README.md的提示使用
+## 更新记录  
 ---------------------------  2023  --------------------------------  
 0614更新：将图像、IMU数据以及GNSS结果文件转为rosbag格式  
 0620更新：利用python写了goodFeatureToTrack函数提取特征点的可视化函数  

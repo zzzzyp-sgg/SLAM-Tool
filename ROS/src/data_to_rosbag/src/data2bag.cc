@@ -94,7 +94,7 @@ void image2bag(rosbag::Bag &bag, const std::string &strPathToImage, const std::s
         std::stringstream ss;
         ss << std::setfill('0') << std::setw(10) << i;
         std::string imageName = strPathToImage + "/data/" + ss.str() + ".png"; 
-        image = cv::imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
+        image = cv::imread(imageName, cv::IMREAD_GRAYSCALE);
         time = vTimeStamp[i] + 315964800 + 604800 * gpsWeek - 8 * 3600;
 
         sensor_msgs::ImagePtr rosImg;

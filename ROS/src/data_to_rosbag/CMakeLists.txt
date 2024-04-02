@@ -140,6 +140,9 @@ include_directories(
 add_executable(data2bag src/data2bag.cc)
 target_link_libraries(data2bag ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+add_executable(bag2image src/bag2image.cc)
+target_link_libraries(bag2image ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
